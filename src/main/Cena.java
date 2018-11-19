@@ -2,11 +2,8 @@ package main;
 
 import com.jogamp.newt.event.KeyEvent;
 import com.jogamp.newt.event.KeyListener;
-import static com.jogamp.opengl.GL.GL_POINTS;
 
-import java.text.DecimalFormat;
 import java.util.Locale;
-import java.util.Random;
 
 import com.jogamp.opengl.GL2;
 import com.jogamp.opengl.GLAutoDrawable;
@@ -19,6 +16,7 @@ import com.jogamp.opengl.util.gl2.GLUT;
  */
 public class Cena implements GLEventListener, KeyListener {
 	private GL2 gl;
+	private GLUT glut;
 	private float aspect;
 
 	private float xTranslateBall = 0;
@@ -26,14 +24,19 @@ public class Cena implements GLEventListener, KeyListener {
 	private char xDirection;
 	private char yDirection = 'd';
 	private float livesAnimation = 0;
+	private float fase2Animation = 0;
 
 	private boolean isGamePaused = false;
 	private int gameFase = 0;
-	private float gameSpeed = 0.03f;
+	private float gameSpeed = 0.02f;
 
 	private float userBarMove = 0;
-	private int userScore = 0;
+	private int userScore = 200;
 	private int userLives = 5;
+	
+	//light test
+	private int toning = GL2.GL_SMOOTH;
+    private boolean lightOn = true;
 
 	@Override
 	public void init(GLAutoDrawable drawable) {
@@ -43,13 +46,12 @@ public class Cena implements GLEventListener, KeyListener {
 	@Override
 	public void display(GLAutoDrawable drawable) {
 		gl = drawable.getGL().getGL2();
-		gl.glClearColor(0, 0, 0, 0);
-		gl.glClear(GL2.GL_COLOR_BUFFER_BIT);
+		glut = new GLUT();
+		
+		gl.glClearColor(0, 0, 0, 1);
+		gl.glClear(GL2.GL_COLOR_BUFFER_BIT | GL2.GL_DEPTH_BUFFER_BIT);
 		gl.glLoadIdentity();
-
-		makeLight();
-		makeBright();
-
+		
 		switch (gameFase) {
 		case 0:
 			runMenu();
@@ -64,23 +66,40 @@ public class Cena implements GLEventListener, KeyListener {
 			gameOver();
 			break;
 		}
+		if (lightOn) {
+			lithingScheme();
+			turnLightOn();
+        }
+		if (!lightOn) {
+            turnLightOff();
+        }
+		
+		gl.glFlush();
 	}
+	
+	public void lithingScheme(){
+		float[] ambientLight = { 0.7f, 0.7f, 0.7f, 1f };  
+	    gl.glLightfv(GL2.GL_LIGHT0, GL2.GL_AMBIENT, ambientLight, 0);  
+		
+        float difuseLight[] = {0.8f, 0.8f, 0.8f, 1.0f};
+        gl.glLightfv(GL2.GL_LIGHT0, GL2.GL_DIFFUSE, difuseLight, 0);
+        
+        float lightPosition[] = {-50.0f, 0.0f, 100.0f, 1.0f};
+        gl.glLightfv(GL2.GL_LIGHT0, GL2.GL_POSITION, lightPosition, 0);
+    }
 
-	public void makeLight() {
-		float luzAmbiente[] = { 0.8f, 0.8f, 0.8f, 1.0f };
-		float posicaoLuz[] = { -50.0f, 0.0f, 100.0f, 1.0f };
+    
+    public void turnLightOn() {
+        gl.glEnable(GL2.GL_COLOR_MATERIAL);
+        gl.glEnable(GL2.GL_LIGHTING);
+        gl.glEnable(GL2.GL_LIGHT0);    
+        gl.glShadeModel(toning);
+    }
 
-		gl.glLightfv(GL2.GL_LIGHT0, GL2.GL_AMBIENT, luzAmbiente, 0);
-		gl.glLightfv(GL2.GL_LIGHT0, GL2.GL_POSITION, posicaoLuz, 0);
-
-		gl.glEnable(GL2.GL_COLOR_MATERIAL);
-		gl.glEnable(GL2.GL_LIGHTING);
-	}
-
-	public void makeBright() {
-		gl.glEnable(GL2.GL_LIGHT0);
-		gl.glShadeModel(GL2.GL_SMOOTH);
-	}
+    public void turnLightOff() {
+        gl.glDisable(GL2.GL_LIGHT0);
+        gl.glDisable(GL2.GL_LIGHTING);
+    }
 
 	public void randomRunBall() {
 		double xRandom = -0.8f + Math.random() * 1.6f;
@@ -146,7 +165,6 @@ public class Cena implements GLEventListener, KeyListener {
 		}
 
 		drawIoda();
-
 		drawText(0.8f, 0.9f, "big", "Score: " + userScore);
 
 		for (int i = 1; i <= 5; i++) {
@@ -157,41 +175,90 @@ public class Cena implements GLEventListener, KeyListener {
 		}
 	}
 	
+	public void drawFase2Art() {
+		drawText(-0.13f, 0.6f, "big", "FASE 2 - Darth Vader");
+		drawDarthVader();
+		drawPlanet();
+	}
+	
+	public void drawPlanet() {
+		gl.glPushMatrix();
+			gl.glPolygonMode(GL2.GL_FRONT_AND_BACK, GL2.GL_LINE);
+			gl.glColor3f(1, 1, 1);
+			gl.glTranslatef(0.5f, 0.2f, 0);
+			gl.glRotatef(fase2Animation+=0.2f, 1, 1, 1);
+			glut.glutWireSphere(0.2f, 10, 10);
+			gl.glPolygonMode(GL2.GL_FRONT_AND_BACK, GL2.GL_FILL);
+			gl.glColor3f(1, 1, 1);
+		gl.glPopMatrix();
+	}
+	
 	public void drawIoda(){
 		float top = 0.8f;
+		float topAdding = 0.03f;
 		float left = -0.2f;
-		drawText(left, top-= 0.05f, "small", "                    ____");
-		drawText(left, top-= 0.05f, "small", "                 _.' :  `._");
-		drawText(left, top-= 0.05f, "small", "             .-.'`.  ;   .'`.-.");
-		drawText(left, top-= 0.05f, "small", "    __      / : ___\\ ;  /___ ; \\      __");
-		drawText(left, top-= 0.05f, "small", "  ,'_ \"\"--.:__;\".-.\";: :\".-.\":__;.--\"\" _`,");
-		drawText(left, top-= 0.05f, "small", "  :' `.t\"\"--.. '<@.`;_  ',@>` ..--\"\"j.' `;");
-		drawText(left, top-= 0.05f, "small", "       `:-.._J '-.-'L__ `-- ' L_..-;'");
-		drawText(left, top-= 0.05f, "small", "         \"-.__ ;  .-\"  \"-.  : __.-\"");
-		drawText(left, top-= 0.05f, "small", "             L ' /.------.\\ ' J");
-		drawText(left, top-= 0.05f, "small", "              \"-.   \"--\"   .-\"");
-		drawText(left, top-= 0.05f, "small", "             __.l\"-:_  _;-\";.__");
-		drawText(left, top-= 0.05f, "small", "          .-j/'.;  ;\"\"\"\"  / .'\\\"-.");
-		drawText(left, top-= 0.05f, "small", "        .' /:`. \"-.:     .-\" .';  `.");
-		drawText(left, top-= 0.05f, "small", "     .-\"  / ;  \"-. \"-..-\" .-\"  :    \"-.");
-		drawText(left, top-= 0.05f, "small", "  .+\"-.  : :      \"-.__.-\"      ;-._   \\");
-		drawText(left, top-= 0.05f, "small", "  ; \\  `.; ;                    : : \"+. ;");
-		drawText(left, top-= 0.05f, "small", "  :  ;   ; ;                    : ;  : \\:");
-		drawText(left, top-= 0.05f, "small", " : `.\"-; ;  ;                  :  ;   ,/;");
-		drawText(left, top-= 0.05f, "small", "  ;    -: ;  :                ;  : .-\"'  :");
-		drawText(left, top-= 0.05f, "small", "  :\\     \\  : ;             : \\.-\"      :");
-		drawText(left, top-= 0.05f, "small", "   ;`.    \\  ; :            ;.'_..--  / ;");
-		drawText(left, top-= 0.05f, "small", "   :  \"-.  \"-:  ;          :/.\"      .'  :");
-		drawText(left, top-= 0.05f, "small", "     \\       .-`.\\        /t-\"\"  \":-+.   :");
-		drawText(left, top-= 0.05f, "small", "      `.  .-\"    `l    __/ /`. :  ; ; \\  ;");
-		drawText(left, top-= 0.05f, "small", "        \\   .-\" .-\"-.-\"  .' .'j \\  /   ;/");
-		drawText(left, top-= 0.05f, "small", "         \\ / .-\"   /.     .'.' ;_:'    ;");
-		drawText(left, top-= 0.05f, "small", "          :-\"\"-.`./-.'     /    `.___.'");
-		drawText(left, top-= 0.05f, "small", "                \\ `t  ._  /           ");
-		drawText(left, top-= 0.05f, "small", "                 \"-.t-._:'");
+		drawText(left, top-= topAdding, "small", "                    ____");
+		drawText(left, top-= topAdding, "small", "                 _.' :  `._");
+		drawText(left, top-= topAdding, "small", "             .-.'`.  ;   .'`.-.");
+		drawText(left, top-= topAdding, "small", "    __      / : ___\\ ;  /___ ; \\      __");
+		drawText(left, top-= topAdding, "small", "  ,'_ \"\"--.:__;\".-.\";: :\".-.\":__;.--\"\" _`,");
+		drawText(left, top-= topAdding, "small", "  :' `.t\"\"--.. '<@.`;_  ',@>` ..--\"\"j.' `;");
+		drawText(left, top-= topAdding, "small", "       `:-.._J '-.-'L__ `-- ' L_..-;'");
+		drawText(left, top-= topAdding, "small", "         \"-.__ ;  .-\"  \"-.  : __.-\"");
+		drawText(left, top-= topAdding, "small", "             L ' /.------.\\ ' J");
+		drawText(left, top-= topAdding, "small", "              \"-.   \"--\"   .-\"");
+		drawText(left, top-= topAdding, "small", "             __.l\"-:_  _;-\";.__");
+		drawText(left, top-= topAdding, "small", "          .-j/'.;  ;\"\"\"\"  / .'\\\"-.");
+		drawText(left, top-= topAdding, "small", "        .' /:`. \"-.:     .-\" .';  `.");
+		drawText(left, top-= topAdding, "small", "     .-\"  / ;  \"-. \"-..-\" .-\"  :    \"-.");
+		drawText(left, top-= topAdding, "small", "  .+\"-.  : :      \"-.__.-\"      ;-._   \\");
+		drawText(left, top-= topAdding, "small", "  ; \\  `.; ;                    : : \"+. ;");
+		drawText(left, top-= topAdding, "small", "  :  ;   ; ;                    : ;  : \\:");
+		drawText(left, top-= topAdding, "small", " : `.\"-; ;  ;                  :  ;   ,/;");
+		drawText(left, top-= topAdding, "small", "  ;    -: ;  :                ;  : .-\"'  :");
+		drawText(left, top-= topAdding, "small", "  :\\     \\  : ;             : \\.-\"      :");
+		drawText(left, top-= topAdding, "small", "   ;`.    \\  ; :            ;.'_..--  / ;");
+		drawText(left, top-= topAdding, "small", "   :  \"-.  \"-:  ;          :/.\"      .'  :");
+		drawText(left, top-= topAdding, "small", "     \\       .-`.\\        /t-\"\"  \":-+.   :");
+		drawText(left, top-= topAdding, "small", "      `.  .-\"    `l    __/ /`. :  ; ; \\  ;");
+		drawText(left, top-= topAdding, "small", "        \\   .-\" .-\"-.-\"  .' .'j \\  /   ;/");
+		drawText(left, top-= topAdding, "small", "         \\ / .-\"   /.     .'.' ;_:'    ;");
+		drawText(left, top-= topAdding, "small", "          :-\"\"-.`./-.'     /    `.___.'");
+		drawText(left, top-= topAdding, "small", "                \\ `t  ._  /           ");
+		drawText(left, top-= topAdding, "small", "                 \"-.t-._:'");
+	}
+	
+	public void drawDarthVader() {
+		float top = 0.5f;
+		float topAdding = 0.03f;
+		float left = -0.7f;
+		
+		drawText(left, top-= topAdding, "small", "                       .-."); 
+		drawText(left, top-= topAdding, "small", "                      |_:_|"); 
+		drawText(left, top-= topAdding, "small", "                     /(_Y_)\\"); 
+		drawText(left, top-= topAdding, "small", ".                   ( \\/M\\/ )"); 
+		drawText(left, top-= topAdding, "small", " '.               _.'-/'-'\\-'._"); 
+		drawText(left, top-= topAdding, "small", "   ':           _/.--'[[[[]'--.\\_"); 
+		drawText(left, top-= topAdding, "small", "     ':        /_'  : |::\"| :  '.\\"); 
+		drawText(left, top-= topAdding, "small", "       ':     //   ./ |oUU| \\.'  :\\"); 
+		drawText(left, top-= topAdding, "small", "         ':  _:'..' \\_|___|_/ :   :|"); 
+		drawText(left, top-= topAdding, "small", "           ':.  .'  |_[___]_|  :.':\\"); 
+		drawText(left, top-= topAdding, "small", "            [::\\ |  :  | |  :   ; : \\"); 
+		drawText(left, top-= topAdding, "small", "             '-'   \\/'.| |.' \\  .;.' |"); 
+		drawText(left, top-= topAdding, "small", "             |\\_    \\  '-'   :       |"); 
+		drawText(left, top-= topAdding, "small", "             |  \\    \\ .:    :   |   |"); 
+		drawText(left, top-= topAdding, "small", "             |   \\    | '.   :    \\  |"); 
+		drawText(left, top-= topAdding, "small", "             /       \\   :. .;       |"); 
+		drawText(left, top-= topAdding, "small", "            /     |   |  :__/     :  \\\\"); 
+		drawText(left, top-= topAdding, "small", "           |  |   |    \\:   | \\   |   ||"); 
+		drawText(left, top-= topAdding, "small", "          /    \\  : :  |:   /  |__|   /|"); 
+		drawText(left, top-= topAdding, "small", "      snd |     : : :_/_|  /'._\\  '--|_\\"); 
+		drawText(left, top-= topAdding, "small", "          /___.-/_|-'   \\  \\"); 
+		drawText(left, top-= topAdding, "small", "                         '-'");
 	}
 
 	public void runFaseTwo() {
+		gameSpeed = 0.03f;
 		if (!isGamePaused) {
 			ballPhysicsEngine();
 		} else {
@@ -201,6 +268,7 @@ public class Cena implements GLEventListener, KeyListener {
 		drawBottomBar();
 		drawBall();
 		drawObstableFase2();
+		drawFase2Art();
 
 		if (userLives == 0) {
 			gameFase = 3;
@@ -227,14 +295,13 @@ public class Cena implements GLEventListener, KeyListener {
 		gl.glRotatef(livesAnimation, 1, 1, 0);
 		livesAnimation += 0.8f;
 
-		GLUT glut = new GLUT();
 		glut.glutSolidTeapot(0.03f);
 		gl.glPopMatrix();
 	}
 
 	public void gameOver() {
 		float begin = 0.8f;
-		float left = -0.3f;
+		float left = -0.1f;
 		drawText(left, begin -= 0.1f, "big", " -----------");
 		drawText(left, begin -= 0.1f, "big", "| GAME OVER |");
 		drawText(left, begin -= 0.1f, "big", " -----------");
@@ -244,7 +311,6 @@ public class Cena implements GLEventListener, KeyListener {
 	}
 
 	public void drawText(float x, float y, String size, String phrase) {
-		GLUT glut = new GLUT();
 		gl.glRasterPos2f(x, y);
 		switch (size) {
 			case "small":
@@ -294,11 +360,11 @@ public class Cena implements GLEventListener, KeyListener {
 				&& isObjectInYRange(xTransBallFixed, yTransBallFixed, -0.1f, 0.5f, -0.2f)) {
 			xDirection = 'l';
 		} else if (xTransBallFixed > -1f && xDirection == 'l') {
-			xTranslateBall -= (0.01f * gameFase);
+			xTranslateBall -= gameSpeed/2;
 		} else if (xTransBallFixed == -1f && xDirection == 'l') {
 			xDirection = 'r';
 		} else if (xTransBallFixed < 1f && xDirection == 'r') {
-			xTranslateBall += (0.01f * gameFase);
+			xTranslateBall += gameSpeed/2;
 		} else if (xTransBallFixed == 1f && xDirection == 'r') {
 			xDirection = 'l';
 		}
@@ -309,11 +375,14 @@ public class Cena implements GLEventListener, KeyListener {
 		} else if (gameFase == 2 && yDirection == 'd'
 				&& isObjectInXRange(xTransBallFixed, yTransBallFixed, -0.2f, 0.2f, 0.6f)) {
 			yDirection = 'u';
-		} else if (yTransBallFixed == -0.7f && yDirection == 'd' && isBallInRangeOfBar(xTransBallFixed)) {
+		} else if (yTransBallFixed == -0.7f && yDirection == 'd' 
+				&& isBallInRangeOfBar(xTransBallFixed)) {
 			yDirection = 'u';
+			lightOn = false;
+			toning = toning == GL2.GL_SMOOTH ? GL2.GL_FLAT : GL2.GL_SMOOTH;
 			userScore += 10;
 		} else if (yTransBallFixed < 0.9f && yDirection == 'u') {
-			yTranslateBall += (gameSpeed * gameFase);
+			yTranslateBall += gameSpeed;
 		} else if (yTransBallFixed == 0.9f && yDirection == 'u') {
 			yDirection = 'd';
 		} else if (yTransBallFixed < -1f) {
@@ -322,34 +391,37 @@ public class Cena implements GLEventListener, KeyListener {
 			userLives--;
 			randomRunBall();
 		} else {
-			yTranslateBall -= (gameSpeed * gameFase);
+			yTranslateBall -= gameSpeed;
+			lightOn = true;
+			toning = toning == GL2.GL_SMOOTH ? GL2.GL_FLAT : GL2.GL_SMOOTH;
 		}
 	}
 
 	public void drawObstableFase2() {
 		gl.glPushMatrix();
-		gl.glBegin(GL2.GL_QUADS);
-		gl.glColor3f(1, 1, 1);
-		gl.glVertex2f(-0.2f, 0.5f);
-		gl.glVertex2f(0.2f, 0.5f);
-		gl.glVertex2f(0.2f, -0.1f);
-		gl.glVertex2f(-0.2f, -0.1f);
-		gl.glEnd();
+			gl.glBegin(GL2.GL_QUADS);				
+				gl.glColor3f(1, 1, 1);
+				gl.glVertex2f(-0.2f, 0.5f);
+				gl.glVertex2f(0.2f, 0.5f);
+				gl.glVertex2f(0.2f, -0.1f);
+				gl.glVertex2f(-0.2f, -0.1f);
+			gl.glEnd();
 		gl.glPopMatrix();
 	}
 
 	public void drawBottomBar() {
 		gl.glPushMatrix();
-		gl.glTranslatef(userBarMove, 0, 0);
-		gl.glBegin(GL2.GL_QUADS);
-		gl.glVertex2f(-0.2f, -0.8f);
-		gl.glColor3f(1.0f, 0.0f, 0.0f);
-		gl.glVertex2f(0.2f, -0.8f);
-		gl.glColor3f(0.0f, 1.0f, 0.0f);
-		gl.glVertex2f(0.2f, -0.9f);
-		gl.glColor3f(0.0f, 0.0f, 1.0f);
-		gl.glVertex2f(-0.2f, -0.9f);
-		gl.glEnd();
+			gl.glTranslatef(userBarMove, 0, 0);
+			gl.glBegin(GL2.GL_QUADS);
+				gl.glColor3f(0.0f, 0.0f, 0.0f);
+				gl.glVertex2f(-0.2f, -0.8f);
+				gl.glColor3f(1.0f, 0.0f, 0.0f);
+				gl.glVertex2f(0.2f, -0.8f);
+				gl.glColor3f(0.0f, 1.0f, 0.0f);
+				gl.glVertex2f(0.2f, -0.9f);
+				gl.glColor3f(0.0f, 0.0f, 1.0f);
+				gl.glVertex2f(-0.2f, -0.9f);
+			gl.glEnd();
 		gl.glPopMatrix();
 	}
 
@@ -371,7 +443,6 @@ public class Cena implements GLEventListener, KeyListener {
 		}
 		gl.glEnd();
 
-		gl.glFlush();
 		gl.glPopMatrix();
 	}
 
