@@ -31,7 +31,7 @@ public class Cena implements GLEventListener, KeyListener {
 	private float gameSpeed = 0.02f;
 
 	private float userBarMove = 0;
-	private int userScore = 200;
+	private int userScore = 0;
 	private int userLives = 5;
 	
 	//light test
